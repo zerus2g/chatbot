@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ARIA Admin Panel</title>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg-deep: #060a12;
+  --bg-card: #0d1220;
+  --bg-panel: #101724;
+  --bg-input: #0a0f1a;
+  --accent: #6366f1;
+  --accent-glow: rgba(99,102,241,0.3);
+  --accent2: #22d3ee;
+  --accent2-glow: rgba(34,211,238,0.2);
+  --danger: #f87171;
+  --danger-glow: rgba(248,113,113,0.2);
+  --success: #34d399;
+  --success-glow: rgba(52,211,153,0.2);
+  --warning: #fbbf24;
+  --text-primary: #f1f5f9;
+  --text-muted: #64748b;
+  --text-dim: #334155;
+  --border: rgba(99,102,241,0.15);
+  --border-hover: rgba(99,102,241,0.35);
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+.bg-grid {
+  position: fixed; inset: 0; z-index: 0;
+  background-image:
+    linear-gradient(rgba(99,102,241,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99,102,241,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+}
+.bg-orb {
+  position: fixed; border-radius: 50%; filter: blur(90px); pointer-events: none; z-index: 0;
+}
+.orb1 { width: 600px; height: 600px; background: rgba(99,102,241,0.07); top: -150px; left: -150px; }
+.orb2 { width: 400px; height: 400px; background: rgba(34,211,238,0.05); bottom: -100px; right: -100px; }
+
+#login-screen {
+  position: fixed; inset: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg-deep);
+}
+.login-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 24px; padding: 40px; width: min(420px, 92vw);
+  position: relative; z-index: 1;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+  animation: card-in 0.5s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(30px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.login-logo {
+  width: 56px; height: 56px; border-radius: 16px; margin: 0 auto 20px;
+  background: linear-gradient(135deg, #4f46e5, #22d3ee);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; box-shadow: 0 0 30px var(--accent-glow);
+}
+.login-title { font-size: 22px; font-weight: 700; text-align: center; margin-bottom: 4px; }
+.login-sub { font-size: 13px; color: var(--text-muted); text-align: center; margin-bottom: 28px; }
+.form-group { margin-bottom: 16px; }
+.form-label {
+  display: block; font-size: 12px; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 6px;
+}
+.form-input {
+  width: 100%; background: var(--bg-input); border: 1px solid var(--border);
+  border-radius: 10px; padding: 11px 14px; color: var(--text-primary);
+  font-size: 14px; font-family: 'Inter', sans-serif; outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+.form-input.error { border-color: var(--danger); }
+.btn-primary {
+  width: 100%; padding: 12px; border-radius: 10px;
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  border: none; color: #fff; font-size: 15px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s; margin-top: 4px;
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 24px var(--accent-glow); }
+.btn-primary:active { transform: translateY(0); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.login-error {
+  background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.2);
+  border-radius: 8px; padding: 8px 12px; font-size: 13px;
+  color: var(--danger); margin-bottom: 14px; display: none;
+}
+.login-error.show { display: block; }
+.default-hint {
+  text-align: center; font-size: 11px; color: var(--text-dim);
+  margin-top: 16px; font-family: 'JetBrains Mono', monospace;
+}
+
+#admin-app { display: none; min-height: 100dvh; position: relative; z-index: 1; }
+#admin-app.visible { display: flex; }
+
+.sidebar {
+  width: 240px; min-height: 100dvh; flex-shrink: 0;
+  background: rgba(13,18,32,0.9); border-right: 1px solid var(--border);
+  backdrop-filter: blur(16px); display: flex; flex-direction: column;
+  position: sticky; top: 0; height: 100dvh; padding: 20px 0; transition: width 0.3s;
+}
+.sidebar-logo {
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 20px 24px; border-bottom: 1px solid var(--border); margin-bottom: 8px;
+}
+.sidebar-logo-icon {
+  width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+  background: linear-gradient(135deg, #4f46e5, #22d3ee);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; box-shadow: 0 0 12px var(--accent-glow);
+}
+.sidebar-logo-text { font-size: 16px; font-weight: 700; }
+.sidebar-logo-sub { font-size: 10px; color: var(--text-muted); }
+.nav-section-label {
+  font-size: 10px; font-weight: 700; color: var(--text-dim);
+  text-transform: uppercase; letter-spacing: 0.1em; padding: 12px 20px 6px;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 20px; cursor: pointer; color: var(--text-muted);
+  font-size: 13px; font-weight: 500; border-left: 3px solid transparent;
+  transition: all 0.15s; text-decoration: none;
+}
+.nav-item:hover { color: var(--text-primary); background: rgba(99,102,241,0.06); }
+.nav-item.active { color: var(--accent); background: rgba(99,102,241,0.1); border-left-color: var(--accent); }
+.nav-item .nav-icon { font-size: 15px; width: 20px; text-align: center; }
+.sidebar-bottom { margin-top: auto; padding: 16px 20px; border-top: 1px solid var(--border); }
+.sidebar-user { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.user-avatar {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: linear-gradient(135deg, #4f46e5, #a855f7);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; flex-shrink: 0;
+}
+.user-name { font-size: 13px; font-weight: 600; }
+.user-role { font-size: 11px; color: var(--text-muted); }
+.btn-logout {
+  width: 100%; padding: 8px; border-radius: 8px;
+  background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.2);
+  color: var(--danger); font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.btn-logout:hover { background: rgba(248,113,113,0.15); border-color: rgba(248,113,113,0.4); }
+
+.main-content { flex: 1; padding: 32px; overflow-y: auto; min-height: 100dvh; }
+.page-header { margin-bottom: 28px; }
+.page-title { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+.page-sub { font-size: 13px; color: var(--text-muted); }
+.section { display: none; }
+.section.active { display: block; }
+
+.card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 16px; padding: 24px; margin-bottom: 20px; transition: border-color 0.2s;
+}
+.card:hover { border-color: var(--border-hover); }
+.card-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+.card-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+.card-divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+.stats-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px; margin-bottom: 24px;
+}
+.stat-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 14px; padding: 20px; position: relative; overflow: hidden;
+}
+.stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+.stat-card.indigo::before { background: linear-gradient(90deg, #4f46e5, #818cf8); }
+.stat-card.cyan::before   { background: linear-gradient(90deg, #06b6d4, #22d3ee); }
+.stat-card.green::before  { background: linear-gradient(90deg, #059669, #34d399); }
+.stat-card.amber::before  { background: linear-gradient(90deg, #d97706, #fbbf24); }
+.stat-card.purple::before { background: linear-gradient(90deg, #7c3aed, #a855f7); }
+.stat-icon { font-size: 22px; margin-bottom: 10px; }
+.stat-value { font-size: 22px; font-weight: 700; margin-bottom: 2px; font-family: 'JetBrains Mono', monospace; }
+.stat-label { font-size: 12px; color: var(--text-muted); }
+
+.field-group { margin-bottom: 20px; }
+.field-label {
+  display: block; font-size: 12px; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 8px;
+}
+.field-label span { color: var(--accent); margin-left: 4px; }
+.field-input {
+  width: 100%; background: var(--bg-input); border: 1px solid var(--border);
+  border-radius: 10px; padding: 11px 14px; color: var(--text-primary);
+  font-size: 14px; font-family: 'Inter', sans-serif; outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.field-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+.field-input.mono { font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+.field-hint { font-size: 11px; color: var(--text-dim); margin-top: 5px; }
+
+.input-with-action { display: flex; gap: 8px; align-items: stretch; }
+.input-with-action .field-input { flex: 1; }
+.input-action-btn {
+  background: rgba(99,102,241,0.08); border: 1px solid var(--border);
+  border-radius: 10px; padding: 0 14px; color: var(--text-muted);
+  font-size: 13px; cursor: pointer; white-space: nowrap; transition: all 0.2s; flex-shrink: 0;
+}
+.input-action-btn:hover { border-color: var(--accent); color: var(--text-primary); background: rgba(99,102,241,0.15); }
+
+.toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; background: var(--bg-input);
+  border: 1px solid var(--border); border-radius: 10px; cursor: pointer; transition: border-color 0.2s;
+}
+.toggle-row:hover { border-color: var(--border-hover); }
+.toggle-row-left { flex: 1; }
+.toggle-label { font-size: 14px; font-weight: 500; }
+.toggle-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.toggle-switch {
+  width: 44px; height: 24px; border-radius: 12px;
+  background: var(--text-dim); position: relative;
+  transition: background 0.2s; flex-shrink: 0; cursor: pointer;
+}
+.toggle-switch.on { background: var(--accent); box-shadow: 0 0 10px var(--accent-glow); }
+.toggle-switch::after {
+  content: ''; position: absolute; width: 18px; height: 18px;
+  border-radius: 50%; background: #fff; top: 3px; left: 3px; transition: transform 0.2s;
+}
+.toggle-switch.on::after { transform: translateX(20px); }
+
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn {
+  padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; border: none;
+}
+.btn-accent { background: linear-gradient(135deg, #4f46e5, #6366f1); color: #fff; box-shadow: 0 4px 14px var(--accent-glow); }
+.btn-accent:hover { transform: translateY(-1px); box-shadow: 0 6px 20px var(--accent-glow); }
+.btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
+.btn-ghost:hover { border-color: var(--accent); color: var(--text-primary); }
+.btn-danger { background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.25); color: var(--danger); }
+.btn-danger:hover { background: rgba(248,113,113,0.18); border-color: rgba(248,113,113,0.5); }
+.btn-success { background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.25); color: var(--success); }
+.btn-success:hover { background: rgba(52,211,153,0.18); }
+.btn-purple { background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.25); color: #c084fc; }
+.btn-purple:hover { background: rgba(168,85,247,0.2); border-color: rgba(168,85,247,0.5); }
+
+.status-row {
+  display: flex; align-items: center; gap: 8px; font-size: 13px;
+  padding: 10px 14px; border-radius: 8px; margin-bottom: 10px;
+}
+.status-row.ok { background: rgba(52,211,153,0.08); color: var(--success); border: 1px solid rgba(52,211,153,0.2); }
+.status-row.err { background: rgba(248,113,113,0.08); color: var(--danger); border: 1px solid rgba(248,113,113,0.2); }
+.status-row.warn { background: rgba(251,191,36,0.08); color: var(--warning); border: 1px solid rgba(251,191,36,0.2); }
+.status-row.info { background: rgba(99,102,241,0.08); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.2); }
+
+.url-preview {
+  background: var(--bg-input); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 14px;
+  font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--accent2);
+  word-break: break-all; margin-top: 6px; min-height: 36px;
+}
+
+.test-result {
+  display: none; margin-top: 14px; border-radius: 10px; padding: 14px;
+  border: 1px solid var(--border); background: var(--bg-input); font-size: 13px; line-height: 1.6;
+}
+.test-result.show { display: block; }
+.test-result .tr-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 6px; }
+.test-result.ok .tr-label { color: var(--success); }
+.test-result.err .tr-label { color: var(--danger); }
+.test-result.loading .tr-label { color: var(--accent2); }
+.test-result pre { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-muted); overflow-x: auto; white-space: pre-wrap; margin-top: 6px; }
+
+.toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 12px 20px; font-size: 13px; color: var(--text-primary);
+  z-index: 999; opacity: 0; transform: translateY(20px);
+  transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  pointer-events: none; box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  display: flex; align-items: center; gap: 8px;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast.success { border-color: rgba(52,211,153,0.3); }
+.toast.error   { border-color: rgba(248,113,113,0.3); }
+
+.badge {
+  display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600;
+  border-radius: 20px; padding: 3px 10px; font-family: 'JetBrains Mono', monospace;
+}
+.badge-green  { background: rgba(52,211,153,0.1); color: var(--success); border: 1px solid rgba(52,211,153,0.25); }
+.badge-indigo { background: rgba(99,102,241,0.1); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.25); }
+.badge-amber  { background: rgba(251,191,36,0.1); color: var(--warning); border: 1px solid rgba(251,191,36,0.25); }
+.badge-red    { background: rgba(248,113,113,0.1); color: var(--danger); border: 1px solid rgba(248,113,113,0.25); }
+.badge-purple { background: rgba(168,85,247,0.1); color: #c084fc; border: 1px solid rgba(168,85,247,0.25); }
+
+.config-table { width: 100%; border-collapse: collapse; }
+.config-table td { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: top; }
+.config-table td:first-child { width: 140px; color: var(--text-muted); font-weight: 500; }
+.config-table td:last-child { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-primary); word-break: break-all; }
+.config-table tr:last-child td { border-bottom: none; }
+
+.prompt-textarea {
+  width: 100%; background: var(--bg-input); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px; color: var(--text-primary);
+  font-size: 13px; font-family: 'JetBrains Mono', monospace; outline: none;
+  resize: vertical; min-height: 200px; line-height: 1.7;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.prompt-textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+.prompt-textarea::placeholder { color: var(--text-dim); }
+
+.prompt-char-counter {
+  text-align: right; font-size: 11px; color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace; margin-top: 5px; transition: color 0.2s;
+}
+.prompt-char-counter.warn { color: var(--warning); }
+.prompt-char-counter.danger { color: var(--danger); }
+
+.prompt-preset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin-top: 4px; }
+.prompt-preset-card {
+  background: var(--bg-input); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px 14px; cursor: pointer;
+  transition: all 0.2s; position: relative; overflow: hidden;
+}
+.prompt-preset-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, #4f46e5, #a855f7); opacity: 0; transition: opacity 0.2s;
+}
+.prompt-preset-card:hover { border-color: var(--border-hover); background: rgba(99,102,241,0.06); }
+.prompt-preset-card:hover::before { opacity: 1; }
+.ppc-icon { font-size: 20px; margin-bottom: 6px; }
+.ppc-name { font-size: 12px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
+.ppc-desc { font-size: 11px; color: var(--text-muted); }
+
+.prompt-active-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.25);
+  border-radius: 20px; padding: 4px 12px; font-size: 11px; font-weight: 600;
+  color: #c084fc; font-family: 'JetBrains Mono', monospace;
+}
+.dot-pulse {
+  width: 6px; height: 6px; border-radius: 50%; background: #a855f7;
+  animation: pulse-dot 1.5s ease-in-out infinite; display: inline-block;
+}
+@keyframes pulse-dot { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
+
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .main-content { padding: 20px; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  #mobile-nav { display: flex !important; }
+  .main-content { padding-bottom: 80px; }
+}
+.mobile-nav-bar {
+  display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 40;
+  background: var(--bg-card); border-top: 1px solid var(--border); padding: 10px 0 14px; gap: 0;
+}
+.mobile-nav-item {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  font-size: 10px; color: var(--text-muted); cursor: pointer; padding: 4px; transition: color 0.15s;
+}
+.mobile-nav-item.active { color: var(--accent); }
+.mobile-nav-item .mn-icon { font-size: 18px; }
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.25); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-orb orb1"></div>
+<div class="bg-orb orb2"></div>
+
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">⚙️</div>
+    <div class="login-title">ARIA Admin</div>
+    <div class="login-sub">Đăng nhập để quản lý cấu hình API</div>
+    <div class="login-error" id="login-error">Mật khẩu không đúng. Thử lại.</div>
+    <div class="form-group">
+      <label class="form-label">Tên đăng nhập</label>
+      <input class="form-input" id="login-user" type="text" value="admin" placeholder="admin" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Mật khẩu</label>
+      <input class="form-input" id="login-pass" type="password" placeholder="••••••••"
+        onkeydown="if(event.key==='Enter') doLogin()" />
+    </div>
+    <button class="btn-primary" onclick="doLogin()" id="login-btn">Đăng nhập</button>
+    <div class="default-hint">Mặc định: admin / aria2024</div>
+  </div>
+</div>
+
+<div id="admin-app">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">⚙️</div>
+      <div>
+        <div class="sidebar-logo-text">ARIA Admin</div>
+        <div class="sidebar-logo-sub">Control Panel</div>
+      </div>
+    </div>
+
+    <div class="nav-section-label">Menu</div>
+    <div class="nav-item active" onclick="showSection('dashboard')" id="nav-dashboard">
+      <span class="nav-icon">📊</span> Dashboard
+    </div>
+    <div class="nav-item" onclick="showSection('api-config')" id="nav-api-config">
+      <span class="nav-icon">🔌</span> API Config
+    </div>
+    <div class="nav-item" onclick="showSection('prompt')" id="nav-prompt">
+      <span class="nav-icon">🧠</span> System Prompt
+    </div>
+    <div class="nav-item" onclick="showSection('security')" id="nav-security">
+      <span class="nav-icon">🔐</span> Bảo mật
+    </div>
+
+    <div class="nav-section-label" style="margin-top:8px;">Liên kết</div>
+    <a class="nav-item" href="index.html">
+      <span class="nav-icon">💬</span> Về Chat
+    </a>
+
+    <div class="sidebar-bottom">
+      <div class="sidebar-user">
+        <div class="user-avatar">A</div>
+        <div>
+          <div class="user-name">admin</div>
+          <div class="user-role">Administrator</div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="doLogout()">
+        <span>⬅</span> Đăng xuất
+      </button>
+    </div>
+  </aside>
+
+  <main class="main-content">
+
+    <!-- DASHBOARD -->
+    <section class="section active" id="sec-dashboard">
+      <div class="page-header">
+        <div class="page-title">📊 Dashboard</div>
+        <div class="page-sub">Tổng quan cấu hình và trạng thái hệ thống</div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card indigo"><div class="stat-icon">🔌</div><div class="stat-value" id="stat-mode">—</div><div class="stat-label">Chế độ API</div></div>
+        <div class="stat-card cyan"><div class="stat-icon">🤖</div><div class="stat-value" id="stat-model">—</div><div class="stat-label">Model đang dùng</div></div>
+        <div class="stat-card green"><div class="stat-icon">🌐</div><div class="stat-value" id="stat-endpoint">—</div><div class="stat-label">Endpoint</div></div>
+        <div class="stat-card amber"><div class="stat-icon">🔑</div><div class="stat-value" id="stat-key">—</div><div class="stat-label">API Key</div></div>
+        <div class="stat-card purple"><div class="stat-icon">🧠</div><div class="stat-value" id="stat-prompt">—</div><div class="stat-label">System Prompt</div></div>
+        <div class="stat-card green" id="sc-neon"><div class="stat-icon">🗄️</div><div class="stat-value" id="stat-neon">—</div><div class="stat-label">Neon Database</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">📋 Cấu hình hiện tại</div>
+        <div class="card-sub">Dữ liệu được đồng bộ từ Neon PostgreSQL và localStorage</div>
+        <table class="config-table">
+          <tr><td>Trạng thái API</td><td><span id="dp-status">—</span></td></tr>
+          <tr><td>Neon Database</td><td id="dp-neon">—</td></tr>
+          <tr><td>Base URL</td><td id="dp-url">—</td></tr>
+          <tr><td>Model</td><td id="dp-model">—</td></tr>
+          <tr><td>API Key</td><td id="dp-key">—</td></tr>
+          <tr><td>System Prompt</td><td id="dp-prompt">—</td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-title">ℹ️ Hướng dẫn</div>
+        <div class="card-sub">Cách hoạt động của hệ thống đồng bộ</div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div class="status-row info"><span>⚡</span><span>Cấu hình lưu trong <code style="font-family:'JetBrains Mono',monospace;font-size:11px;background:rgba(99,102,241,0.15);padding:1px 6px;border-radius:4px;">localStorage</code> — đồng bộ ngay với trang chat qua <code style="font-family:'JetBrains Mono',monospace;font-size:11px;background:rgba(99,102,241,0.15);padding:1px 6px;border-radius:4px;">storage event</code></span></div>
+          <div class="status-row info"><span>🔌</span><span>Nếu chưa cấu hình Custom API → trang chat tự fallback về <strong>Puter.js (GPT-4o)</strong></span></div>
+          <div class="status-row info"><span>🧠</span><span>System Prompt áp dụng cho mọi cuộc trò chuyện — định nghĩa nhân cách, phong cách và giới hạn của chatbot</span></div>
+          <div class="status-row info"><span>🌐</span><span>Hỗ trợ mọi endpoint tương thích OpenAI: OpenAI, Groq, Together, OpenRouter, Ollama local, Azure…</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- API CONFIG -->
+    <section class="section" id="sec-api-config">
+      <div class="page-header">
+        <div class="page-title">🔌 API Config</div>
+        <div class="page-sub">Cấu hình endpoint, API key và model cho trang chat</div>
+      </div>
+      <div class="card">
+        <div class="card-title">🔀 Chế độ API</div>
+        <div class="card-sub">Chọn dùng Custom API hay Puter.js mặc định</div>
+        <div class="toggle-row" onclick="toggleCustomAPI()">
+          <div class="toggle-row-left">
+            <div class="toggle-label">Bật Custom API</div>
+            <div class="toggle-desc">Dùng Base URL + API Key tự cấu hình. Tắt = dùng Puter.js miễn phí.</div>
+          </div>
+          <div class="toggle-switch" id="custom-toggle"></div>
+        </div>
+      </div>
+      <!-- NEON POSTGRESQL CARD -->
+      <div class="card" id="neon-db-card">
+        <div class="card-title">🗄️ Neon.com Database (PostgreSQL)</div>
+        <div class="card-sub">Lưu trữ Base URL, API Key và System Prompt an toàn trên Cloud SQL miễn phí của <a href="https://neon.com/" target="_blank" rel="noopener" style="color:var(--accent2);text-decoration:underline;">neon.com</a></div>
+        
+        <div id="neon-status-banner" style="margin-bottom:16px;"></div>
+
+        <div class="field-group">
+          <label class="field-label">Kiểm tra kết nối Neon Database</label>
+          <div class="input-with-action">
+            <input class="field-input mono" id="neon-conn-input" type="password" placeholder="postgresql://user:pass@ep-...neon.tech/neondb?sslmode=require (để trống nếu dùng DATABASE_URL trên Vercel)" />
+            <button class="input-action-btn" onclick="toggleNeonConnVisibility()" id="neon-key-toggle-btn">👁 Hiện</button>
+            <button class="btn btn-purple" onclick="testNeonConnection()" id="btn-neon-test">⚡ Test kết nối</button>
+          </div>
+          <div class="field-hint">💡 Khi deploy lên Vercel: Thêm biến môi trường <code>DATABASE_URL</code> trong Vercel Project Settings. Bảng <code>aria_settings</code> sẽ tự động khởi tạo.</div>
+        </div>
+
+        <div id="neon-test-result" class="test-result">
+          <div class="tr-label" id="neon-tr-label"></div>
+          <div id="neon-tr-content"></div>
+          <pre id="neon-tr-raw"></pre>
+        </div>
+
+        <div class="btn-row" style="margin-top:16px;">
+          <button class="btn btn-accent" onclick="syncUpToNeon()" id="btn-sync-neon"><span>☁️</span> Lưu & Đồng bộ lên Neon</button>
+          <button class="btn btn-ghost" onclick="syncFromNeon(true)"><span>🔄</span> Tải dữ liệu từ Neon</button>
+          <a class="btn btn-ghost" href="https://console.neon.tech/" target="_blank" rel="noopener"><span>↗️</span> Mở Neon Console</a>
+        </div>
+      </div>
+
+      <div class="card" id="custom-api-fields">
+        <div class="card-title">⚙️ Cấu hình Custom API</div>
+        <div class="card-sub">Nhập thông tin kết nối API tương thích OpenAI</div>
+        <div class="field-group">
+          <label class="field-label">Base URL <span>*</span></label>
+          <input class="field-input mono" id="cfg-baseurl" type="url" placeholder="https://api.openai.com/v1" oninput="updateURLPreview()" />
+          <div class="field-hint">URL gốc của API. VD: https://api.openai.com/v1 | https://api.groq.com/openai/v1 | http://localhost:11434/v1</div>
+          <div class="url-preview" id="url-preview">— nhập Base URL để xem endpoint —</div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">API Key <span>*</span></label>
+          <div class="input-with-action">
+            <input class="field-input mono" id="cfg-apikey" type="password" placeholder="sk-••••••••••••••••••••••••••••••••" />
+            <button class="input-action-btn" onclick="toggleKeyVisibility()" id="key-toggle-btn">👁 Hiện</button>
+          </div>
+          <div class="field-hint">API Key từ provider. Với Ollama local có thể để bất kỳ giá trị nào.</div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Model <span>*</span></label>
+          <div class="input-with-action">
+            <input class="field-input mono" id="cfg-model" type="text" placeholder="gpt-4o" />
+            <select class="input-action-btn" id="model-preset" onchange="applyModelPreset()" style="padding:0 10px;cursor:pointer;font-size:12px;">
+              <option value="">— Preset —</option>
+              <optgroup label="OpenAI">
+                <option value="gpt-4o">gpt-4o</option>
+                <option value="gpt-4o-mini">gpt-4o-mini</option>
+                <option value="gpt-4-turbo">gpt-4-turbo</option>
+                <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+                <option value="o3-mini">o3-mini</option>
+              </optgroup>
+              <optgroup label="Groq">
+                <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
+                <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
+                <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
+                <option value="gemma2-9b-it">gemma2-9b-it</option>
+              </optgroup>
+              <optgroup label="OpenRouter">
+                <option value="anthropic/claude-3.5-sonnet">claude-3.5-sonnet</option>
+                <option value="google/gemini-pro-1.5">gemini-pro-1.5</option>
+                <option value="meta-llama/llama-3-70b-instruct">llama-3-70b</option>
+                <option value="mistralai/mistral-7b-instruct">mistral-7b</option>
+              </optgroup>
+              <optgroup label="Ollama (local)">
+                <option value="llama3">llama3</option>
+                <option value="mistral">mistral</option>
+                <option value="phi3">phi3</option>
+                <option value="qwen2">qwen2</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="field-hint">Tên model chính xác theo provider. Dùng preset hoặc nhập tay.</div>
+        </div>
+        <hr class="card-divider" />
+        <div class="card-sub" style="margin-bottom:12px;">🚀 Provider preset — tự điền Base URL</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
+          <button class="btn btn-ghost" onclick="fillProvider('openai')">OpenAI</button>
+          <button class="btn btn-ghost" onclick="fillProvider('groq')">Groq</button>
+          <button class="btn btn-ghost" onclick="fillProvider('openrouter')">OpenRouter</button>
+          <button class="btn btn-ghost" onclick="fillProvider('together')">Together AI</button>
+          <button class="btn btn-ghost" onclick="fillProvider('ollama')">Ollama (local)</button>
+          <button class="btn btn-ghost" onclick="fillProvider('azure')">Azure OpenAI</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">🧪 Kiểm tra & Lưu</div>
+        <div class="card-sub">Test kết nối trước khi lưu để đảm bảo hoạt động đúng</div>
+        <div class="btn-row">
+          <button class="btn btn-ghost" onclick="testConnection()" id="test-btn"><span>🔍</span> Test kết nối</button>
+          <button class="btn btn-accent" onclick="saveConfig()" id="save-btn"><span>💾</span> Lưu & Đồng bộ</button>
+          <button class="btn btn-danger" onclick="resetConfig()"><span>🗑</span> Reset về Puter.js</button>
+        </div>
+        <div class="test-result" id="test-result">
+          <div class="tr-label" id="tr-label">KẾT QUẢ TEST</div>
+          <div id="tr-content"></div>
+          <pre id="tr-raw"></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- SYSTEM PROMPT -->
+    <section class="section" id="sec-prompt">
+      <div class="page-header">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+          <div>
+            <div class="page-title">🧠 System Prompt</div>
+            <div class="page-sub">Định nghĩa nhân cách, phong cách và hành vi của chatbot</div>
+          </div>
+          <div id="prompt-active-indicator"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🔀 Trạng thái System Prompt</div>
+        <div class="card-sub">Bật/tắt áp dụng system prompt cho chatbot</div>
+        <div class="toggle-row" onclick="toggleSystemPrompt()">
+          <div class="toggle-row-left">
+            <div class="toggle-label">Bật System Prompt</div>
+            <div class="toggle-desc">Khi bật, prompt bên dưới sẽ được gửi kèm mỗi cuộc trò chuyện với vai trò <code style="font-family:'JetBrains Mono',monospace;font-size:11px;">system</code>. Trang chat nhận ngay qua <code style="font-family:'JetBrains Mono',monospace;font-size:11px;">storage event</code>.</div>
+          </div>
+          <div class="toggle-switch" id="prompt-toggle"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">✍️ Nội dung Prompt</div>
+        <div class="card-sub">Viết hoặc chọn preset để bắt đầu. Hỗ trợ biến: <code style="font-family:'JetBrains Mono',monospace;font-size:11px;background:rgba(99,102,241,0.15);padding:1px 6px;border-radius:4px;">{{date}}</code> <code style="font-family:'JetBrains Mono',monospace;font-size:11px;background:rgba(99,102,241,0.15);padding:1px 6px;border-radius:4px;">{{time}}</code> <code style="font-family:'JetBrains Mono',monospace;font-size:11px;background:rgba(99,102,241,0.15);padding:1px 6px;border-radius:4px;">{{lang}}</code></div>
+        <div class="field-group">
+          <label class="field-label">Tên Prompt <span style="color:var(--text-dim);font-weight:400;text-transform:none;letter-spacing:0;">(tuỳ chọn)</span></label>
+          <input class="field-input" id="prompt-name" type="text" placeholder="VD: Trợ lý học thuật, Customer Support, Coding Assistant…" />
+        </div>
+        <div class="field-group">
+          <label class="field-label" style="display:flex;align-items:center;justify-content:space-between;">
+            <span>Nội dung <span>*</span></span>
+            <span class="prompt-char-counter" id="prompt-char-counter">0 ký tự</span>
+          </label>
+          <textarea class="prompt-textarea" id="prompt-content"
+            placeholder="Bạn là ARIA, một trợ lý AI thông minh và thân thiện..."
+            oninput="updateCharCounter()"></textarea>
+          <div class="field-hint">Prompt được đặt ở <code style="font-family:'JetBrains Mono',monospace;font-size:11px;">role: "system"</code> trong mỗi request. Mô tả nhân cách, nhiệm vụ, giới hạn và phong cách trả lời.</div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-accent" onclick="savePrompt()"><span>💾</span> Lưu Prompt</button>
+          <button class="btn btn-ghost" onclick="clearPromptEditor()"><span>🗑</span> Xoá nội dung</button>
+          <button class="btn btn-purple" onclick="previewPrompt()"><span>👁</span> Xem preview</button>
+        </div>
+      </div>
+
+      <div class="card" id="prompt-preview-card" style="display:none;">
+        <div class="card-title">👁 Preview — sau khi xử lý biến</div>
+        <div class="card-sub">Đây là nội dung thực tế được gửi đến model</div>
+        <pre id="prompt-preview-content" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent2);white-space:pre-wrap;line-height:1.7;background:var(--bg-input);padding:14px;border-radius:8px;border:1px solid var(--border);"></pre>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📚 Thư viện Preset</div>
+        <div class="card-sub">Chọn một preset để tải vào editor — có thể tuỳ chỉnh sau</div>
+        <div class="prompt-preset-grid" id="preset-grid"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">💾 Prompts đã lưu</div>
+        <div class="card-sub">Quản lý và tải lại các prompt bạn đã lưu</div>
+        <div id="saved-prompts-list">
+          <div style="color:var(--text-dim);font-size:13px;padding:10px 0;">Chưa có prompt nào được lưu.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECURITY -->
+    <section class="section" id="sec-security">
+      <div class="page-header">
+        <div class="page-title">🔐 Bảo mật</div>
+        <div class="page-sub">Quản lý mật khẩu đăng nhập admin</div>
+      </div>
+      <div class="card">
+        <div class="card-title">🔑 Đổi mật khẩu Admin</div>
+        <div class="card-sub">Mật khẩu được lưu trong localStorage của trình duyệt này</div>
+        <div class="field-group"><label class="field-label">Mật khẩu hiện tại</label><input class="field-input" id="sec-old-pass" type="password" placeholder="••••••••" /></div>
+        <div class="field-group"><label class="field-label">Mật khẩu mới</label><input class="field-input" id="sec-new-pass" type="password" placeholder="••••••••" /></div>
+        <div class="field-group"><label class="field-label">Xác nhận mật khẩu mới</label><input class="field-input" id="sec-confirm-pass" type="password" placeholder="••••••••" /></div>
+        <div id="sec-msg" style="margin-bottom:12px;"></div>
+        <button class="btn btn-accent" onclick="changePassword()"><span>🔐</span> Đổi mật khẩu</button>
+      </div>
+      <div class="card">
+        <div class="card-title">⚠️ Lưu ý bảo mật</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div class="status-row warn"><span>⚠️</span>Mật khẩu và API Key lưu dạng plain text trong localStorage — không dùng cho production thực sự.</div>
+          <div class="status-row warn"><span>🔒</span>Không chia sẻ API Key. Xoay key định kỳ nếu đây là key thật.</div>
+          <div class="status-row info"><span>💡</span>Admin panel frontend-only, phù hợp dùng cá nhân hoặc demo nội bộ.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">🧹 Xoá dữ liệu</div>
+        <div class="card-sub">Xoá toàn bộ cấu hình và session khỏi localStorage</div>
+        <div class="btn-row"><button class="btn btn-danger" onclick="clearAll()">🗑 Xoá tất cả dữ liệu local</button></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div class="mobile-nav-bar" id="mobile-nav">
+  <div class="mobile-nav-item active" onclick="showSection('dashboard')" id="mnav-dashboard"><div class="mn-icon">📊</div><div>Dashboard</div></div>
+  <div class="mobile-nav-item" onclick="showSection('api-config')" id="mnav-api-config"><div class="mn-icon">🔌</div><div>API</div></div>
+  <div class="mobile-nav-item" onclick="showSection('prompt')" id="mnav-prompt"><div class="mn-icon">🧠</div><div>Prompt</div></div>
+  <div class="mobile-nav-item" onclick="showSection('security')" id="mnav-security"><div class="mn-icon">🔐</div><div>Bảo mật</div></div>
+  <a class="mobile-nav-item" href="index.html"><div class="mn-icon">💬</div><div>Chat</div></a>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const CONFIG_KEY  = 'aria_api_config';
+const PASS_KEY    = 'aria_admin_pass';
+const SESSION_KEY = 'aria_admin_session';
+const PROMPT_KEY  = 'aria_system_prompt';
+const PROMPTS_KEY = 'aria_saved_prompts';
+const DEFAULT_PASS = 'aria2024';
+
+const PROVIDERS = {
+  openai:     { url: 'https://api.openai.com/v1',            model: 'gpt-4o' },
+  groq:       { url: 'https://api.groq.com/openai/v1',       model: 'llama-3.3-70b-versatile' },
+  openrouter: { url: 'https://openrouter.ai/api/v1',         model: 'openai/gpt-4o' },
+  together:   { url: 'https://api.together.xyz/v1',          model: 'meta-llama/Llama-3-70b-chat-hf' },
+  ollama:     { url: 'http://localhost:11434/v1',             model: 'llama3' },
+  azure:      { url: 'https://YOUR-RESOURCE.openai.azure.com/openai/deployments/YOUR-DEPLOY', model: 'gpt-4o' }
+};
+
+const PROMPT_PRESETS = [
+  { id: 'assistant-vi', icon: '🤖', name: 'Trợ lý chung', desc: 'Thân thiện, tiếng Việt',
+    content: `Bạn là ARIA, một trợ lý AI thông minh, thân thiện và luôn sẵn sàng giúp đỡ.\n\nNguyên tắc:\n- Luôn trả lời bằng tiếng Việt, trừ khi người dùng yêu cầu khác\n- Ngắn gọn, chính xác và hữu ích\n- Thái độ nhiệt tình, tích cực và chuyên nghiệp\n- Nếu không biết, hãy thành thật nói không biết thay vì bịa đặt\n- Ngày hôm nay là {{date}}` },
+  { id: 'coding', icon: '💻', name: 'Coding Assistant', desc: 'Chuyên về lập trình',
+    content: `Bạn là một senior software engineer với kinh nghiệm rộng về nhiều ngôn ngữ và framework.\n\nChuyên môn: Python, JavaScript/TypeScript, Go, Rust, C++, SQL, DevOps.\n\nKhi trả lời về code:\n- Luôn giải thích logic trước khi đưa code\n- Thêm comment vào những phần phức tạp\n- Đề cập đến edge cases và error handling\n- Gợi ý best practices và tối ưu hoá khi phù hợp\n\nNgày: {{date}}` },
+  { id: 'customer-support', icon: '🎧', name: 'Customer Support', desc: 'Hỗ trợ khách hàng',
+    content: `Bạn là nhân viên hỗ trợ khách hàng chuyên nghiệp.\n\nPhong cách giao tiếp:\n- Lịch sự, kiên nhẫn và đồng cảm\n- Luôn xác nhận vấn đề trước khi đưa ra giải pháp\n- Hỏi thêm thông tin khi cần thiết\n- Đề xuất giải pháp cụ thể và từng bước\n\nThời gian: {{time}} ngày {{date}}` },
+  { id: 'teacher', icon: '📚', name: 'Gia sư AI', desc: 'Dạy học kiên nhẫn',
+    content: `Bạn là một gia sư AI kiên nhẫn và tận tâm.\n\nPhương pháp giảng dạy:\n- Giải thích từ cơ bản đến nâng cao, dùng ví dụ thực tế\n- Đặt câu hỏi để kiểm tra sự hiểu biết\n- Khuyến khích và động viên khi học sinh gặp khó khăn\n- Chia nhỏ vấn đề phức tạp thành các bước đơn giản\n\nNgôn ngữ: {{lang}}. Ngày học: {{date}}` },
+  { id: 'writer', icon: '✍️', name: 'Sáng tác & Viết', desc: 'Hỗ trợ viết lách',
+    content: `Bạn là một biên tập viên và nhà văn sáng tạo, giúp người dùng viết tốt hơn.\n\nKhả năng:\n- Viết và chỉnh sửa mọi thể loại: blog, truyện, email, báo cáo\n- Điều chỉnh giọng văn theo yêu cầu\n- Góp ý cụ thể về cấu trúc, từ ngữ và nhịp điệu\n- Brainstorm ý tưởng và phát triển nội dung` },
+  { id: 'analyst', icon: '📊', name: 'Data Analyst', desc: 'Phân tích dữ liệu',
+    content: `Bạn là chuyên gia phân tích dữ liệu với nền tảng vững về thống kê và BI.\n\nKỹ năng: Python (pandas, numpy), SQL, Excel, Power BI, Tableau.\n\nKhi phân tích:\n- Đặt câu hỏi về context và mục tiêu kinh doanh trước\n- Trình bày insight rõ ràng, dễ hiểu\n- Gợi ý visualization phù hợp\n- Đưa ra actionable recommendations\n\nNgày: {{date}}` },
+  { id: 'translator', icon: '🌐', name: 'Dịch thuật', desc: 'Chuyên dịch đa ngôn ngữ',
+    content: `Bạn là dịch giả chuyên nghiệp, thành thạo tiếng Việt, Anh, Nhật, Hàn, Trung và Pháp.\n\nNguyên tắc dịch:\n- Ưu tiên nghĩa tự nhiên thay vì dịch từng từ\n- Giữ nguyên giọng điệu và phong cách bản gốc\n- Chú thích thuật ngữ khó hoặc từ văn hoá đặc thù\n- Hỏi về context khi bản gốc không rõ ý` },
+  { id: 'empty', icon: '✨', name: 'Tuỳ chỉnh', desc: 'Bắt đầu từ trống', content: '' }
+];
+
+/* AUTH */
+function getAdminPass() { return localStorage.getItem(PASS_KEY) || DEFAULT_PASS; }
+
+function doLogin() {
+  const user = document.getElementById('login-user').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  const err  = document.getElementById('login-error');
+  if (user !== 'admin' || pass !== getAdminPass()) {
+    err.classList.add('show');
+    document.getElementById('login-pass').classList.add('error');
+    setTimeout(() => { err.classList.remove('show'); document.getElementById('login-pass').classList.remove('error'); }, 2500);
+    return;
+  }
+  sessionStorage.setItem(SESSION_KEY, '1');
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('admin-app').classList.add('visible');
+  initApp();
+}
+
+function doLogout() {
+  sessionStorage.removeItem(SESSION_KEY);
+  document.getElementById('admin-app').classList.remove('visible');
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-pass').value = '';
+}
+
+window.addEventListener('load', () => {
+  if (sessionStorage.getItem(SESSION_KEY) === '1') {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('admin-app').classList.add('visible');
+    initApp();
+  }
+  document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+});
+
+/* INIT */
+async function initApp() {
+  loadConfigToForm();
+  refreshDashboard();
+  renderPresetGrid();
+  renderSavedPrompts();
+  loadPromptToEditor();
+  refreshPromptUI();
+  await syncFromNeon();
+}
+
+/* NEON DATABASE SYNC */
+let neonStatus = { connected: false, message: 'Đang kiểm tra...', version: '', latency_ms: null, database: '' };
+
+function updateNeonUI() {
+  const banner = document.getElementById('neon-status-banner');
+  const scVal = document.getElementById('stat-neon');
+  const dpNeon = document.getElementById('dp-neon');
+  
+  if (neonStatus.connected) {
+    if (banner) banner.innerHTML = `
+      <div class="status-row ok">
+        <span>🟢</span>
+        <div>
+          <strong>Đã kết nối Neon Database:</strong> ${neonStatus.database || 'neondb'} (${neonStatus.version || 'PostgreSQL'})
+          ${neonStatus.latency_ms ? `· <code>${neonStatus.latency_ms}ms</code>` : ''}
+          · Cấu hình tự động đồng bộ trên bảng SQL <code>aria_settings</code>
+        </div>
+      </div>`;
+    if (scVal) scVal.innerHTML = `<span style="color:var(--success);font-size:16px;">🟢 Online</span>`;
+    if (dpNeon) dpNeon.innerHTML = `<span class="badge badge-green">🟢 Connected (${neonStatus.database || 'neondb'})</span>`;
+  } else {
+    if (banner) banner.innerHTML = `
+      <div class="status-row warn">
+        <span>⚠️</span>
+        <div>
+          <strong>Chưa kết nối Neon Database:</strong> ${neonStatus.message || 'Chưa thiết lập DATABASE_URL.'}
+          <div style="margin-top:4px;font-size:12px;opacity:0.85;">Dự án đang dùng LocalStorage fallback. Để lưu API key và base URL trên Cloud SQL, hãy tạo DB miễn phí tại <a href="https://neon.com/" target="_blank" style="color:#fff;text-decoration:underline;">neon.com</a> và cấu hình <code>DATABASE_URL</code> trong Vercel Settings.</div>
+        </div>
+      </div>`;
+    if (scVal) scVal.innerHTML = `<span style="color:var(--warning);font-size:14px;">⚪ Local</span>`;
+    if (dpNeon) dpNeon.innerHTML = `<span class="badge badge-amber">⚪ LocalStorage (Chưa có DATABASE_URL)</span>`;
+  }
+}
+
+async function syncFromNeon(showToastNotice = false) {
+  try {
+    const res = await fetch('/api/config');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.databaseConnected) {
+        neonStatus.connected = true;
+        neonStatus.message = 'Đã kết nối';
+        if (data.apiConfig) {
+          saveConfigToStorage(data.apiConfig);
+          loadConfigToForm();
+        }
+        if (data.systemPrompt) {
+          savePromptToStorage(data.systemPrompt);
+          loadPromptToEditor();
+          refreshPromptUI();
+        }
+        if (data.savedPrompts && Array.isArray(data.savedPrompts)) {
+          saveSavedPrompts(data.savedPrompts);
+          renderSavedPrompts();
+        }
+        if (showToastNotice) showToast('Đã tải cấu hình từ Neon Database ✓', 'success');
+      } else {
+        neonStatus.connected = false;
+        neonStatus.message = data.message || 'DATABASE_URL chưa được cấu hình';
+        if (showToastNotice) showToast(neonStatus.message, 'error');
+      }
+    } else {
+      neonStatus.connected = false;
+      neonStatus.message = `Lỗi server HTTP ${res.status}`;
+    }
+  } catch (e) {
+    neonStatus.connected = false;
+    neonStatus.message = 'Không kết nối được API backend';
+  }
+  updateNeonUI();
+  refreshDashboard();
+}
+
+async function syncUpToNeon() {
+  const btn = document.getElementById('btn-sync-neon');
+  if (btn) btn.disabled = true;
+
+  const apiConfig = getConfig();
+  const systemPrompt = getPromptConfig();
+  const savedPrompts = getSavedPrompts();
+
+  try {
+    const res = await fetch('/api/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apiConfig, systemPrompt, savedPrompts })
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      neonStatus.connected = true;
+      updateNeonUI();
+      refreshDashboard();
+      showToast('Đã lưu cấu hình lên Neon SQL thành công! ✓', 'success');
+    } else {
+      showToast(data.error || 'Chưa cấu hình DATABASE_URL trên Vercel', 'error');
+    }
+  } catch (e) {
+    showToast(`Lỗi gọi API: ${e.message}`, 'error');
+  }
+  if (btn) btn.disabled = false;
+}
+
+function toggleNeonConnVisibility() {
+  const inp = document.getElementById('neon-conn-input');
+  const btn = document.getElementById('neon-key-toggle-btn');
+  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈 Ẩn'; }
+  else { inp.type = 'password'; btn.textContent = '👁 Hiện'; }
+}
+
+async function testNeonConnection() {
+  const customConn = document.getElementById('neon-conn-input').value.trim();
+  const resBox = document.getElementById('neon-test-result');
+  const label = document.getElementById('neon-tr-label');
+  const content = document.getElementById('neon-tr-content');
+  const raw = document.getElementById('neon-tr-raw');
+  const btn = document.getElementById('btn-neon-test');
+
+  resBox.className = 'test-result show loading';
+  label.textContent = '⏳ ĐANG TEST KẾT NỐI NEON SQL...';
+  content.textContent = customConn ? 'Đang kiểm tra chuỗi kết nối vừa nhập...' : 'Đang kiểm tra DATABASE_URL trên server...';
+  raw.textContent = '';
+  btn.disabled = true;
+
+  try {
+    const resp = await fetch('/api/test-db', {
+      method: customConn ? 'POST' : 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      body: customConn ? JSON.stringify({ connectionString: customConn }) : undefined
+    });
+    const json = await resp.json();
+    if (resp.ok && json.ok) {
+      resBox.className = 'test-result show ok';
+      label.textContent = `✅ KẾT NỐI NEON THÀNH CÔNG — ${json.latency_ms}ms`;
+      content.textContent = `Nguồn: ${json.source} | Database: ${json.database} | User: ${json.user}`;
+      raw.textContent = JSON.stringify(json, null, 2);
+      neonStatus.connected = true;
+      neonStatus.version = json.version.split(' ')[0] + ' ' + (json.version.split(' ')[1] || '');
+      neonStatus.latency_ms = json.latency_ms;
+      neonStatus.database = json.database;
+      updateNeonUI();
+      refreshDashboard();
+      showToast(`Neon kết nối thành công (${json.latency_ms}ms)!`, 'success');
+    } else {
+      resBox.className = 'test-result show err';
+      label.textContent = '❌ KẾT NỐI THẤT BẠI';
+      content.textContent = json.error || 'Không kết nối được database';
+      raw.textContent = JSON.stringify(json, null, 2);
+      showToast('Kết nối thất bại. Kiểm tra chuỗi connection string!', 'error');
+    }
+  } catch (e) {
+    resBox.className = 'test-result show err';
+    label.textContent = '❌ LỖI GỌI API TEST';
+    content.textContent = e.message;
+    raw.textContent = 'Kiểm tra xem backend local hoặc Vercel function có đang hoạt động.';
+  }
+  btn.disabled = false;
+}
+
+/* NAV */
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item, .mobile-nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`sec-${name}`)?.classList.add('active');
+  document.getElementById(`nav-${name}`)?.classList.add('active');
+  document.getElementById(`mnav-${name}`)?.classList.add('active');
+  if (name === 'dashboard') refreshDashboard();
+  if (name === 'api-config') refreshAPIConfigUI();
+  if (name === 'prompt') { refreshPromptUI(); renderSavedPrompts(); }
+}
+
+/* CONFIG */
+function getConfig() {
+  try { const r = localStorage.getItem(CONFIG_KEY); return r ? JSON.parse(r) : { useCustom: false, baseURL: '', apiKey: '', model: 'gpt-4o' }; }
+  catch { return { useCustom: false, baseURL: '', apiKey: '', model: 'gpt-4o' }; }
+}
+function saveConfigToStorage(cfg) { localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg)); }
+
+function loadConfigToForm() {
+  const cfg = getConfig();
+  document.getElementById('cfg-baseurl').value = cfg.baseURL || '';
+  document.getElementById('cfg-apikey').value  = cfg.apiKey  || '';
+  document.getElementById('cfg-model').value   = cfg.model   || 'gpt-4o';
+  refreshAPIConfigUI();
+}
+
+function refreshAPIConfigUI() {
+  const cfg = getConfig();
+  const sw = document.getElementById('custom-toggle');
+  const fields = document.getElementById('custom-api-fields');
+  if (cfg.useCustom) { sw.classList.add('on'); fields.style.opacity = '1'; fields.style.pointerEvents = 'auto'; }
+  else { sw.classList.remove('on'); fields.style.opacity = '0.5'; fields.style.pointerEvents = 'none'; }
+  updateURLPreview();
+}
+
+function toggleCustomAPI() {
+  const cfg = getConfig(); cfg.useCustom = !cfg.useCustom;
+  saveConfigToStorage(cfg); refreshAPIConfigUI();
+  showToast(cfg.useCustom ? 'Custom API đã bật' : 'Về Puter.js mặc định', 'success');
+  syncUpToNeon();
+}
+
+async function saveConfig() {
+  const baseURL = document.getElementById('cfg-baseurl').value.trim();
+  const apiKey  = document.getElementById('cfg-apikey').value.trim();
+  const model   = document.getElementById('cfg-model').value.trim() || 'gpt-4o';
+  const cfg = getConfig();
+  if (cfg.useCustom) {
+    if (!baseURL) { showToast('Base URL không được để trống', 'error'); return; }
+    if (!apiKey)  { showToast('API Key không được để trống', 'error'); return; }
+  }
+  const updated = { ...cfg, baseURL, apiKey, model };
+  saveConfigToStorage(updated);
+  showToast('Đã lưu cấu hình local ✓', 'success');
+  refreshDashboard();
+  await syncUpToNeon();
+}
+
+function resetConfig() {
+  if (!confirm('Reset về Puter.js mặc định?')) return;
+  saveConfigToStorage({ useCustom: false, baseURL: '', apiKey: '', model: 'gpt-4o' });
+  loadConfigToForm(); refreshDashboard();
+  showToast('Đã reset về Puter.js', 'success');
+  syncUpToNeon();
+}
+
+/* DASHBOARD */
+function refreshDashboard() {
+  const cfg = getConfig(); const pCfg = getPromptConfig();
+  const isCustom = cfg.useCustom && cfg.baseURL && cfg.apiKey;
+  const hasPrompt = pCfg.enabled && pCfg.content;
+  document.getElementById('stat-mode').textContent    = isCustom ? 'Custom' : 'Puter.js';
+  document.getElementById('stat-model').textContent   = (cfg.model || 'gpt-4o').split('/').pop().slice(0, 10);
+  document.getElementById('stat-endpoint').textContent = cfg.baseURL ? cfg.baseURL.replace(/^https?:\/\//, '').slice(0, 18) + '…' : 'puter.js';
+  document.getElementById('stat-key').textContent     = cfg.apiKey ? '••••' + cfg.apiKey.slice(-4) : 'N/A';
+  document.getElementById('stat-prompt').textContent  = hasPrompt ? (pCfg.name || 'Active').slice(0, 10) : 'Off';
+  
+  const scNeon = document.getElementById('stat-neon');
+  if (scNeon) {
+    scNeon.innerHTML = neonStatus.connected
+      ? `<span style="color:var(--success);font-size:16px;">🟢 Online</span>`
+      : `<span style="color:var(--warning);font-size:14px;">⚪ Local</span>`;
+  }
+
+  const dpNeon = document.getElementById('dp-neon');
+  if (dpNeon) {
+    dpNeon.innerHTML = neonStatus.connected
+      ? `<span class="badge badge-green">🟢 Connected (${neonStatus.database || 'neondb'})</span>`
+      : `<span class="badge badge-amber">⚪ LocalStorage (Chưa có DATABASE_URL)</span>`;
+  }
+
+  document.getElementById('dp-status').outerHTML = `<span id="dp-status"><span class="badge ${isCustom ? 'badge-green' : 'badge-indigo'}">${isCustom ? '✅ Custom API active' : '🔵 Puter.js (fallback)'}</span></span>`;
+  document.getElementById('dp-url').textContent   = cfg.baseURL || '— (Puter.js) —';
+  document.getElementById('dp-model').textContent = cfg.model || 'gpt-4o';
+  document.getElementById('dp-key').textContent   = cfg.apiKey ? cfg.apiKey.slice(0, 4) + '••••••••••••' + cfg.apiKey.slice(-4) : '— (không cần với Puter.js) —';
+  document.getElementById('dp-prompt').outerHTML  = `<td id="dp-prompt">${hasPrompt ? `<span class="badge badge-purple">✅ ${pCfg.name || 'Active'} (${pCfg.content.length} ký tự)</span>` : `<span class="badge badge-amber">⚪ Tắt</span>`}</td>`;
+}
+
+/* SYSTEM PROMPT */
+function getPromptConfig() {
+  try { const r = localStorage.getItem(PROMPT_KEY); return r ? JSON.parse(r) : { enabled: false, name: '', content: '' }; }
+  catch { return { enabled: false, name: '', content: '' }; }
+}
+function savePromptToStorage(cfg) { localStorage.setItem(PROMPT_KEY, JSON.stringify(cfg)); }
+function getSavedPrompts() {
+  try { const r = localStorage.getItem(PROMPTS_KEY); return r ? JSON.parse(r) : []; }
+  catch { return []; }
+}
+function saveSavedPrompts(arr) { localStorage.setItem(PROMPTS_KEY, JSON.stringify(arr)); }
+
+function loadPromptToEditor() {
+  const cfg = getPromptConfig();
+  document.getElementById('prompt-name').value    = cfg.name    || '';
+  document.getElementById('prompt-content').value = cfg.content || '';
+  updateCharCounter();
+}
+
+function refreshPromptUI() {
+  const cfg = getPromptConfig();
+  const sw  = document.getElementById('prompt-toggle');
+  cfg.enabled ? sw.classList.add('on') : sw.classList.remove('on');
+  const indicator = document.getElementById('prompt-active-indicator');
+  indicator.innerHTML = cfg.enabled && cfg.content
+    ? `<div class="prompt-active-badge"><span class="dot-pulse"></span>${cfg.name || 'System Prompt'} đang hoạt động</div>`
+    : `<span class="badge badge-amber">⚪ Tắt</span>`;
+}
+
+function toggleSystemPrompt() {
+  const cfg = getPromptConfig(); cfg.enabled = !cfg.enabled;
+  savePromptToStorage(cfg); refreshPromptUI();
+  showToast(cfg.enabled ? 'System Prompt đã bật' : 'System Prompt đã tắt', 'success');
+  refreshDashboard();
+  syncUpToNeon();
+}
+
+async function savePrompt() {
+  const name    = document.getElementById('prompt-name').value.trim();
+  const content = document.getElementById('prompt-content').value.trim();
+  if (!content) { showToast('Nội dung prompt không được để trống', 'error'); return; }
+  const cfg = getPromptConfig();
+  savePromptToStorage({ ...cfg, name, content });
+  const saved = getSavedPrompts();
+  const existIdx = saved.findIndex(p => p.name === name);
+  const entry = { id: Date.now(), name: name || 'Prompt ' + (saved.length + 1), content, savedAt: new Date().toISOString() };
+  if (existIdx >= 0) saved[existIdx] = entry; else saved.unshift(entry);
+  saveSavedPrompts(saved);
+  showToast('Prompt đã lưu & áp dụng ✓', 'success');
+  refreshPromptUI(); refreshDashboard(); renderSavedPrompts();
+  await syncUpToNeon();
+}
+
+function clearPromptEditor() {
+  if (!confirm('Xoá nội dung trong editor?')) return;
+  document.getElementById('prompt-name').value = '';
+  document.getElementById('prompt-content').value = '';
+  updateCharCounter();
+  document.getElementById('prompt-preview-card').style.display = 'none';
+}
+
+function previewPrompt() {
+  const content = document.getElementById('prompt-content').value;
+  if (!content.trim()) { showToast('Nhập nội dung prompt trước', 'error'); return; }
+  const d = new Date();
+  const processed = content
+    .replace(/\{\{date\}\}/g, d.toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }))
+    .replace(/\{\{time\}\}/g, d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }))
+    .replace(/\{\{lang\}\}/g, 'Tiếng Việt');
+  document.getElementById('prompt-preview-content').textContent = processed;
+  const card = document.getElementById('prompt-preview-card');
+  card.style.display = 'block';
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function updateCharCounter() {
+  const len = document.getElementById('prompt-content').value.length;
+  const el  = document.getElementById('prompt-char-counter');
+  el.textContent = `${len.toLocaleString()} ký tự`;
+  el.className = 'prompt-char-counter' + (len > 8000 ? ' danger' : len > 4000 ? ' warn' : '');
+}
+
+function renderPresetGrid() {
+  document.getElementById('preset-grid').innerHTML = PROMPT_PRESETS.map(p => `
+    <div class="prompt-preset-card" onclick="loadPreset('${p.id}')">
+      <div class="ppc-icon">${p.icon}</div>
+      <div class="ppc-name">${p.name}</div>
+      <div class="ppc-desc">${p.desc}</div>
+    </div>`).join('');
+}
+
+function loadPreset(id) {
+  const p = PROMPT_PRESETS.find(p => p.id === id); if (!p) return;
+  document.getElementById('prompt-name').value    = p.name;
+  document.getElementById('prompt-content').value = p.content;
+  updateCharCounter();
+  document.getElementById('prompt-preview-card').style.display = 'none';
+  document.getElementById('prompt-content').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  showToast(`Đã tải preset: ${p.name}`, 'success');
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderSavedPrompts() {
+  const saved = getSavedPrompts();
+  const container = document.getElementById('saved-prompts-list');
+  if (!saved.length) { container.innerHTML = '<div style="color:var(--text-dim);font-size:13px;padding:10px 0;">Chưa có prompt nào được lưu.</div>'; return; }
+  container.innerHTML = saved.map((p, i) => `
+    <div style="background:var(--bg-input);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px;transition:border-color 0.2s;"
+         onmouseenter="this.style.borderColor='var(--border-hover)'" onmouseleave="this.style.borderColor='var(--border)'">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:600;margin-bottom:3px;">${escHtml(p.name)}</div>
+          <div style="font-size:11px;color:var(--text-dim);font-family:'JetBrains Mono',monospace;margin-bottom:6px;">${new Date(p.savedAt).toLocaleString('vi-VN')} · ${p.content.length} ký tự</div>
+          <div style="font-size:12px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:500px;">${escHtml(p.content.slice(0, 120))}${p.content.length > 120 ? '…' : ''}</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0;align-items:center;">
+          <button class="btn btn-ghost" style="padding:7px 14px;font-size:12px;" onclick="loadSavedPrompt(${i})">📂 Tải</button>
+          <button class="btn btn-accent" style="padding:7px 14px;font-size:12px;" onclick="applySavedPrompt(${i})">✅ Áp dụng</button>
+          <button class="btn btn-danger" style="padding:7px 12px;font-size:12px;" onclick="deleteSavedPrompt(${i})">🗑</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function loadSavedPrompt(idx) {
+  const p = getSavedPrompts()[idx]; if (!p) return;
+  document.getElementById('prompt-name').value    = p.name;
+  document.getElementById('prompt-content').value = p.content;
+  updateCharCounter();
+  document.getElementById('prompt-preview-card').style.display = 'none';
+  document.getElementById('prompt-content').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  showToast(`Đã tải: ${p.name}`, 'success');
+}
+
+async function applySavedPrompt(idx) {
+  const p = getSavedPrompts()[idx]; if (!p) return;
+  const cfg = getPromptConfig();
+  savePromptToStorage({ ...cfg, name: p.name, content: p.content, enabled: true });
+  document.getElementById('prompt-name').value    = p.name;
+  document.getElementById('prompt-content').value = p.content;
+  updateCharCounter(); refreshPromptUI(); refreshDashboard();
+  showToast(`Đã áp dụng: ${p.name} ✓`, 'success');
+  await syncUpToNeon();
+}
+
+async function deleteSavedPrompt(idx) {
+  const saved = getSavedPrompts(); const p = saved[idx];
+  if (!confirm(`Xoá prompt "${p.name}"?`)) return;
+  saved.splice(idx, 1); saveSavedPrompts(saved); renderSavedPrompts();
+  showToast('Đã xoá prompt', 'success');
+  await syncUpToNeon();
+}
+
+/* URL PREVIEW */
+function updateURLPreview() {
+  const base = document.getElementById('cfg-baseurl').value.trim();
+  document.getElementById('url-preview').textContent = base ? base.replace(/\/$/, '') + '/chat/completions' : '— nhập Base URL để xem endpoint —';
+}
+
+/* KEY VISIBILITY */
+function toggleKeyVisibility() {
+  const inp = document.getElementById('cfg-apikey'); const btn = document.getElementById('key-toggle-btn');
+  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈 Ẩn'; }
+  else { inp.type = 'password'; btn.textContent = '👁 Hiện'; }
+}
+
+/* PROVIDER PRESETS */
+function fillProvider(key) {
+  const p = PROVIDERS[key]; if (!p) return;
+  document.getElementById('cfg-baseurl').value = p.url;
+  document.getElementById('cfg-model').value   = p.model;
+  updateURLPreview(); showToast(`Đã điền preset ${key}`, 'success');
+}
+
+function applyModelPreset() {
+  const sel = document.getElementById('model-preset'); const val = sel.value;
+  if (val) { document.getElementById('cfg-model').value = val; sel.value = ''; }
+}
+
+/* TEST CONNECTION */
+async function testConnection() {
+  const baseURL = document.getElementById('cfg-baseurl').value.trim();
+  const apiKey  = document.getElementById('cfg-apikey').value.trim();
+  const model   = document.getElementById('cfg-model').value.trim() || 'gpt-4o';
+  const res = document.getElementById('test-result'); const label = document.getElementById('tr-label');
+  const content = document.getElementById('tr-content'); const raw = document.getElementById('tr-raw');
+  const btn = document.getElementById('test-btn');
+  if (!baseURL) { showToast('Nhập Base URL trước', 'error'); return; }
+  if (!apiKey)  { showToast('Nhập API Key trước', 'error'); return; }
+  res.className = 'test-result show loading'; label.textContent = '⏳ ĐANG KIỂM TRA...';
+  content.textContent = `Gửi test message đến ${baseURL}/chat/completions`; raw.textContent = ''; btn.disabled = true;
+  const t0 = Date.now();
+  try {
+    const resp = await fetch(baseURL.replace(/\/$/, '') + '/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+      body: JSON.stringify({ model, messages: [{ role: 'user', content: 'Say "OK" in one word.' }], max_tokens: 10, stream: false })
+    });
+    const elapsed = Date.now() - t0; const json = await resp.json();
+    if (!resp.ok) {
+      res.className = 'test-result show err'; label.textContent = `❌ THẤT BẠI — HTTP ${resp.status}`;
+      content.textContent = json.error?.message || resp.statusText; raw.textContent = JSON.stringify(json, null, 2);
+    } else {
+      const reply = json.choices?.[0]?.message?.content || '(no content)';
+      res.className = 'test-result show ok'; label.textContent = `✅ THÀNH CÔNG — ${elapsed}ms`;
+      content.textContent = `Model: ${json.model || model} | Phản hồi: "${reply.trim()}"`;
+      raw.textContent = JSON.stringify({ id: json.id, model: json.model, usage: json.usage, latency_ms: elapsed }, null, 2);
+    }
+  } catch(e) {
+    const elapsed = Date.now() - t0; res.className = 'test-result show err';
+    label.textContent = `❌ LỖI KẾT NỐI — ${elapsed}ms`; content.textContent = e.message;
+    raw.textContent = 'Kiểm tra: CORS policy, URL chính xác, network connectivity.';
+  }
+  btn.disabled = false;
+}
+
+/* SECURITY */
+function changePassword() {
+  const oldP = document.getElementById('sec-old-pass').value;
+  const newP = document.getElementById('sec-new-pass').value;
+  const conP = document.getElementById('sec-confirm-pass').value;
+  const msg  = document.getElementById('sec-msg');
+  if (oldP !== getAdminPass()) { msg.innerHTML = '<div class="status-row err">❌ Mật khẩu hiện tại không đúng.</div>'; return; }
+  if (newP.length < 6) { msg.innerHTML = '<div class="status-row err">❌ Mật khẩu mới phải ít nhất 6 ký tự.</div>'; return; }
+  if (newP !== conP) { msg.innerHTML = '<div class="status-row err">❌ Xác nhận mật khẩu không khớp.</div>'; return; }
+  localStorage.setItem(PASS_KEY, newP);
+  msg.innerHTML = '<div class="status-row ok">✅ Đổi mật khẩu thành công!</div>';
+  document.getElementById('sec-old-pass').value = '';
+  document.getElementById('sec-new-pass').value = '';
+  document.getElementById('sec-confirm-pass').value = '';
+  showToast('Mật khẩu đã được cập nhật', 'success');
+}
+
+function clearAll() {
+  if (!confirm('Xoá toàn bộ dữ liệu? Bao gồm config, prompt, mật khẩu, session.')) return;
+  [CONFIG_KEY, PASS_KEY, PROMPT_KEY, PROMPTS_KEY].forEach(k => localStorage.removeItem(k));
+  sessionStorage.removeItem(SESSION_KEY);
+  showToast('Đã xoá toàn bộ dữ liệu', 'success');
+  setTimeout(() => location.reload(), 1200);
+}
+
+/* TOAST */
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+  t.textContent = `${icon} ${msg}`; t.className = `toast show ${type}`;
+  clearTimeout(t._timer); t._timer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const cfg = getConfig(); const fields = document.getElementById('custom-api-fields');
+  if (!cfg.useCustom) { fields.style.opacity = '0.5'; fields.style.pointerEvents = 'none'; }
+});
+</script>
+</body>
+</html>

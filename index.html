@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ARIA — AI Assistant</title>
+  <script src="https://js.puter.com/v2/"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    button {
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+    }
+
+    textarea {
+      font-family: 'Inter', sans-serif;
+    }
+
+    :root {
+      --bg: #030711;
+      --s1: #07101f;
+      --s2: #0c1828;
+      --accent: #818cf8;
+      --accent-dim: rgba(129, 140, 248, 0.1);
+      --accent-glow: rgba(129, 140, 248, 0.45);
+      --accent-glow2: rgba(129, 140, 248, 0.15);
+      --sky: #38bdf8;
+      --sky-dim: rgba(56, 189, 248, 0.1);
+      --sky-glow: rgba(56, 189, 248, 0.4);
+      --violet: #a78bfa;
+      --violet-dim: rgba(167, 139, 250, 0.1);
+      --green: #34d399;
+      --border: rgba(129, 140, 248, 0.13);
+      --border2: rgba(129, 140, 248, 0.35);
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --muted2: #94a3b8;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ─── BACKGROUND ────────────────────────── */
+    #particles {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .bg-grid {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(129, 140, 248, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(129, 140, 248, 0.025) 1px, transparent 1px);
+      background-size: 52px 52px;
+    }
+
+    .bg-glow {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 60% 50% at 10% 20%, rgba(129, 140, 248, 0.07) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 60% at 90% 80%, rgba(56, 189, 248, 0.05) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 40% at 50% 50%, rgba(167, 139, 250, 0.04) 0%, transparent 60%);
+    }
+
+    /* ─── SHELL ──────────────────────────────── */
+    .app {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      max-width: 980px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* ─── HEADER ─────────────────────────────── */
+    header {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 24px;
+      background: rgba(3, 7, 17, 0.82);
+      backdrop-filter: blur(28px) saturate(180%);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    header::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent 0%, var(--accent) 25%, var(--sky) 50%, var(--violet) 75%, transparent 100%);
+      background-size: 300% 100%;
+      animation: hline 5s linear infinite;
+    }
+
+    @keyframes hline {
+      0% {
+        background-position: 200% 0;
+      }
+
+      100% {
+        background-position: -200% 0;
+      }
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      position: relative;
+      width: 40px;
+      height: 40px;
+      border-radius: 13px;
+      background: linear-gradient(135deg, #3730a3, #4f46e5, #0ea5e9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+      box-shadow: 0 0 24px var(--accent-glow), 0 0 48px var(--accent-glow2);
+      animation: logo-breathe 4s ease-in-out infinite;
+    }
+
+    .logo-icon::before {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      border-radius: 16px;
+      z-index: -1;
+      background: conic-gradient(from 0deg, var(--accent), var(--sky), var(--violet), var(--accent));
+      animation: ring-spin 4s linear infinite;
+      padding: 2px;
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+    }
+
+    @keyframes logo-breathe {
+
+      0%,
+      100% {
+        box-shadow: 0 0 20px var(--accent-glow), 0 0 40px var(--accent-glow2);
+      }
+
+      50% {
+        box-shadow: 0 0 36px var(--sky-glow), 0 0 72px rgba(56, 189, 248, 0.12);
+      }
+    }
+
+    @keyframes ring-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .logo-name {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      background: linear-gradient(135deg, var(--text) 0%, var(--accent) 45%, var(--sky) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .logo-sub {
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-top: 1px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .admin-nav-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(129, 140, 248, 0.1);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 5px 12px;
+      border-radius: 12px;
+      text-decoration: none;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .admin-nav-btn:hover {
+      background: rgba(129, 140, 248, 0.22);
+      border-color: var(--border2);
+      color: #fff;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px var(--accent-glow2);
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(52, 211, 153, 0.07);
+      border: 1px solid rgba(52, 211, 153, 0.18);
+      border-radius: 30px;
+      padding: 5px 12px;
+      font-size: 11px;
+      color: var(--green);
+      font-weight: 500;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: sdot 2s ease infinite;
+    }
+
+    .model-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(56, 189, 248, 0.08);
+      border: 1px solid rgba(56, 189, 248, 0.22);
+      border-radius: 30px;
+      padding: 4px 10px;
+      font-size: 11px;
+      color: var(--sky);
+      font-family: 'JetBrains Mono', monospace;
+      max-width: 180px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    @keyframes sdot {
+
+      0%,
+      100% {
+        opacity: 1;
+        box-shadow: 0 0 8px var(--green);
+      }
+
+      50% {
+        opacity: 0.4;
+        box-shadow: 0 0 2px var(--green);
+      }
+    }
+
+    /* ─── CHAT AREA ──────────────────────────── */
+    .chat {
+      flex: 1 1 0;
+      overflow-y: auto;
+      padding: 28px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+      scroll-behavior: smooth;
+      scrollbar-gutter: stable;
+    }
+
+    .chat::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .chat::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .chat::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
+
+    .chat::-webkit-scrollbar-thumb:hover {
+      background: var(--border2);
+    }
+
+    /* ─── WELCOME ────────────────────────────── */
+    .welcome {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      padding: 28px 20px;
+      text-align: center;
+      animation: welc-in 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    @keyframes welc-in {
+      from {
+        opacity: 0;
+        transform: translateY(28px) scale(0.96);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .wi-wrap {
+      position: relative;
+      width: 96px;
+      height: 96px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .wi-ring1,
+    .wi-ring2 {
+      position: absolute;
+      border-radius: 50%;
+      animation: ring-spin linear infinite;
+    }
+
+    .wi-ring1 {
+      inset: -12px;
+      background: conic-gradient(from 0deg, var(--accent) 0%, var(--sky) 30%, var(--violet) 60%, transparent 75%, var(--accent) 100%);
+      padding: 2px;
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+      animation-duration: 5s;
+    }
+
+    .wi-ring2 {
+      inset: -22px;
+      opacity: 0.35;
+      background: conic-gradient(from 180deg, var(--violet) 0%, var(--sky) 40%, transparent 65%, var(--violet) 100%);
+      padding: 1px;
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+      animation-duration: 8s;
+      animation-direction: reverse;
+    }
+
+    .wi-icon {
+      width: 86px;
+      height: 86px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, #3730a3, #4f46e5, #0284c7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      box-shadow: 0 0 48px var(--accent-glow), 0 0 80px var(--accent-glow2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      animation: wi-float 5s ease-in-out infinite;
+    }
+
+    @keyframes wi-float {
+
+      0%,
+      100% {
+        transform: translateY(0) scale(1);
+        box-shadow: 0 0 48px var(--accent-glow), 0 0 80px var(--accent-glow2);
+      }
+
+      50% {
+        transform: translateY(-10px) scale(1.02);
+        box-shadow: 0 0 64px var(--sky-glow), 0 0 100px rgba(56, 189, 248, 0.18);
+      }
+    }
+
+    .w-title {
+      font-size: 30px;
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      background: linear-gradient(135deg, var(--text) 0%, var(--accent) 35%, var(--sky) 65%, var(--violet) 100%);
+      background-size: 200% 100%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: title-shine 5s linear infinite;
+    }
+
+    @keyframes title-shine {
+      0% {
+        background-position: 100% 0;
+      }
+
+      100% {
+        background-position: -100% 0;
+      }
+    }
+
+    .w-sub {
+      font-size: 14px;
+      color: var(--muted2);
+      max-width: 440px;
+      line-height: 1.75;
+      margin-top: 4px;
+    }
+
+    .chips {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 540px;
+    }
+
+    .chip {
+      background: rgba(129, 140, 248, 0.07);
+      border: 1px solid var(--border);
+      border-radius: 30px;
+      padding: 9px 20px;
+      font-size: 13px;
+      color: var(--muted2);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      opacity: 0;
+      animation: chip-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .chip::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.07), transparent);
+      transition: left 0.5s;
+    }
+
+    .chip:hover::before {
+      left: 110%;
+    }
+
+    .chip:nth-child(1) {
+      animation-delay: .08s;
+    }
+
+    .chip:nth-child(2) {
+      animation-delay: .16s;
+    }
+
+    .chip:nth-child(3) {
+      animation-delay: .24s;
+    }
+
+    .chip:nth-child(4) {
+      animation-delay: .32s;
+    }
+
+    @keyframes chip-in {
+      from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.88);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .chip:hover {
+      background: rgba(129, 140, 248, 0.18);
+      border-color: var(--accent);
+      color: var(--text);
+      transform: translateY(-4px) scale(1.05);
+      box-shadow: 0 10px 28px rgba(129, 140, 248, 0.22), 0 0 0 1px rgba(129, 140, 248, 0.2);
+    }
+
+    .chip:active {
+      transform: translateY(-2px) scale(1.01);
+    }
+
+    /* ─── MESSAGES ───────────────────────────── */
+    .mwrap {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    .mwrap.ai {
+      animation: min-left 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .mwrap.user {
+      flex-direction: row-reverse;
+      animation: min-right 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes min-left {
+      from {
+        opacity: 0;
+        transform: translateX(-18px) scale(0.94);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+      }
+    }
+
+    @keyframes min-right {
+      from {
+        opacity: 0;
+        transform: translateX(18px) scale(0.94);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+      }
+    }
+
+    .av {
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .av.ai {
+      background: linear-gradient(135deg, #3730a3, #4f46e5, #0ea5e9);
+      box-shadow: 0 0 0 2px var(--bg), 0 0 0 3px rgba(129, 140, 248, 0.5), 0 0 16px var(--accent-glow);
+      animation: av-pulse 3s ease-in-out infinite;
+    }
+
+    @keyframes av-pulse {
+
+      0%,
+      100% {
+        box-shadow: 0 0 0 2px var(--bg), 0 0 0 3px rgba(129, 140, 248, 0.5), 0 0 12px var(--accent-glow);
+      }
+
+      50% {
+        box-shadow: 0 0 0 2px var(--bg), 0 0 0 3px rgba(56, 189, 248, 0.6), 0 0 24px var(--sky-glow);
+      }
+    }
+
+    .av.user {
+      background: linear-gradient(135deg, #4f46e5, #a855f7);
+      box-shadow: 0 0 14px rgba(168, 85, 247, 0.3);
+    }
+
+    .mbody {
+      display: flex;
+      flex-direction: column;
+      max-width: min(78%, 660px);
+    }
+
+    .bubble {
+      padding: 14px 18px;
+      border-radius: 20px;
+      font-size: 14px;
+      line-height: 1.72;
+      word-break: break-word;
+    }
+
+    .bubble.ai {
+      background: rgba(10, 18, 38, 0.88);
+      border: 1px solid var(--border);
+      border-top-left-radius: 4px;
+      backdrop-filter: blur(20px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .bubble.ai::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(135deg, rgba(129, 140, 248, 0.04) 0%, transparent 60%);
+    }
+
+    .bubble.user {
+      background: linear-gradient(135deg, #312e81, #4f46e5, #6366f1);
+      border-top-right-radius: 4px;
+      color: #fff;
+      box-shadow: 0 4px 24px rgba(99, 102, 241, 0.35), 0 0 48px rgba(99, 102, 241, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+
+    .bubble.ai strong {
+      color: var(--sky);
+    }
+
+    .bubble.ai em {
+      color: var(--violet);
+      font-style: italic;
+    }
+
+    .bubble.ai code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      background: rgba(129, 140, 248, 0.12);
+      border: 1px solid rgba(129, 140, 248, 0.2);
+      padding: 1px 6px;
+      border-radius: 6px;
+      color: var(--accent);
+    }
+
+    .bubble.ai pre {
+      background: rgba(3, 7, 17, 0.95);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      overflow-x: auto;
+      margin: 8px 0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+    }
+
+    .bubble.ai ul,
+    .bubble.ai ol {
+      padding-left: 22px;
+    }
+
+    .bubble.ai li {
+      margin: 4px 0;
+    }
+
+    .bubble.streaming {
+      border-color: rgba(56, 189, 248, 0.28);
+      animation: stream-glow 2s ease-in-out infinite;
+    }
+
+    @keyframes stream-glow {
+
+      0%,
+      100% {
+        box-shadow: 0 0 0 0 transparent;
+      }
+
+      50% {
+        box-shadow: 0 0 20px rgba(56, 189, 248, 0.12), inset 0 0 20px rgba(56, 189, 248, 0.03);
+      }
+    }
+
+    .mtime {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 5px;
+      padding: 0 6px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .mwrap:hover .mtime {
+      opacity: 1;
+    }
+
+    .mwrap.user .mtime {
+      text-align: right;
+    }
+
+    /* ─── TYPING ─────────────────────────────── */
+    .tdots {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      padding: 4px 2px;
+    }
+
+    .tdot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      animation: td 1.4s ease-in-out infinite;
+    }
+
+    .tdot:nth-child(1) {
+      background: var(--accent);
+    }
+
+    .tdot:nth-child(2) {
+      background: var(--sky);
+      animation-delay: .2s;
+    }
+
+    .tdot:nth-child(3) {
+      background: var(--violet);
+      animation-delay: .4s;
+    }
+
+    @keyframes td {
+
+      0%,
+      60%,
+      100% {
+        transform: translateY(0) scale(1);
+        opacity: 0.4;
+      }
+
+      30% {
+        transform: translateY(-9px) scale(1.3);
+        opacity: 1;
+      }
+    }
+
+    /* ─── QUICK BAR ──────────────────────────── */
+    .qbar {
+      padding: 10px 22px 0;
+      display: flex;
+      gap: 8px;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      flex-shrink: 0;
+      scrollbar-width: none;
+      -webkit-mask: linear-gradient(90deg, transparent, #fff 4%, #fff 96%, transparent);
+      mask: linear-gradient(90deg, transparent, #fff 4%, #fff 96%, transparent);
+    }
+
+    .qbar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .qbtn {
+      background: rgba(129, 140, 248, 0.06);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 7px 16px;
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .qbtn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+      transform: translateX(-110%);
+      transition: transform 0.5s;
+    }
+
+    .qbtn:hover::after {
+      transform: translateX(110%);
+    }
+
+    .qbtn:hover {
+      background: rgba(129, 140, 248, 0.16);
+      border-color: var(--accent);
+      color: var(--text);
+      transform: translateY(-4px) scale(1.05);
+      box-shadow: 0 10px 24px rgba(129, 140, 248, 0.2), 0 0 0 1px rgba(129, 140, 248, 0.15);
+    }
+
+    .qbtn:active {
+      transform: translateY(-1px) scale(0.97);
+    }
+
+    /* ─── INPUT ──────────────────────────────── */
+    .input-section {
+      padding: 12px 22px 18px;
+      background: rgba(3, 7, 17, 0.85);
+      backdrop-filter: blur(28px);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .input-wrap {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      background: rgba(10, 18, 38, 0.92);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 10px 14px;
+      position: relative;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+
+    .input-wrap:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-dim), 0 0 28px var(--accent-glow2), 0 0 56px rgba(129, 140, 248, 0.06);
+    }
+
+    .input-wrap::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: 23px;
+      z-index: -1;
+      background: linear-gradient(135deg, var(--accent), var(--sky), var(--violet), var(--accent));
+      background-size: 300% 300%;
+      opacity: 0;
+      transition: opacity 0.3s;
+      animation: grad-shift 4s linear infinite;
+    }
+
+    .input-wrap:focus-within::before {
+      opacity: 0.7;
+    }
+
+    @keyframes grad-shift {
+      0% {
+        background-position: 0% 50%;
+      }
+
+      50% {
+        background-position: 100% 50%;
+      }
+
+      100% {
+        background-position: 0% 50%;
+      }
+    }
+
+    #msg-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-size: 14px;
+      resize: none;
+      min-height: 22px;
+      max-height: 140px;
+      line-height: 1.6;
+      overflow-y: auto;
+    }
+
+    #msg-input::placeholder {
+      color: var(--muted);
+    }
+
+    #msg-input::-webkit-scrollbar {
+      width: 3px;
+    }
+
+    #msg-input::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px;
+    }
+
+    #sbtn {
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      flex-shrink: 0;
+      background: linear-gradient(135deg, #3730a3, #4f46e5, #6366f1);
+      border: none;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px var(--accent-glow), 0 4px 14px rgba(79, 70, 229, 0.45);
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    #sbtn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.25), transparent 60%);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    #sbtn:hover:not(:disabled)::before {
+      opacity: 1;
+    }
+
+    #sbtn:hover:not(:disabled) {
+      transform: scale(1.12) translateY(-2px);
+      box-shadow: 0 0 36px var(--accent-glow), 0 8px 28px rgba(79, 70, 229, 0.55);
+    }
+
+    #sbtn:active:not(:disabled) {
+      transform: scale(0.92);
+    }
+
+    #sbtn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .ihint {
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+      margin-top: 8px;
+      opacity: 0.6;
+    }
+
+    /* ─── STREAM CURSOR ──────────────────────── */
+    .scur {
+      display: inline-block;
+      width: 2px;
+      height: 15px;
+      background: var(--sky);
+      margin-left: 3px;
+      vertical-align: middle;
+      border-radius: 2px;
+      animation: scur-blink .8s step-end infinite;
+    }
+
+    @keyframes scur-blink {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0;
+      }
+    }
+
+    /* ─── TOAST ──────────────────────────────── */
+    .toast {
+      position: fixed;
+      bottom: 26px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: rgba(8, 14, 28, 0.97);
+      backdrop-filter: blur(24px);
+      border: 1px solid var(--border2);
+      border-radius: 18px;
+      padding: 12px 24px;
+      font-size: 13px;
+      z-index: 300;
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s;
+      opacity: 0;
+      white-space: nowrap;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55), 0 0 40px rgba(129, 140, 248, 0.1);
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* ─── RIPPLE ─────────────────────────────── */
+    .ripple {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.22);
+      transform: scale(0);
+      animation: rpl .55s linear;
+      pointer-events: none;
+    }
+
+    @keyframes rpl {
+      to {
+        transform: scale(5);
+        opacity: 0;
+      }
+    }
+
+    /* ─── DIVIDER ────────────────────────────── */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ─── RESPONSIVE ─────────────────────────── */
+    @media(max-width:640px) {
+      header {
+        padding: 10px 16px;
+      }
+
+      .chat {
+        padding: 16px 14px;
+        gap: 16px;
+      }
+
+      .input-section {
+        padding: 10px 14px 14px;
+      }
+
+      .mbody {
+        max-width: 88%;
+      }
+
+      .w-title {
+        font-size: 22px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <canvas id="particles"></canvas>
+  <div class="bg-grid"></div>
+  <div class="bg-glow"></div>
+
+  <div class="app">
+
+    <header>
+      <div class="logo">
+        <div class="logo-icon">🤖</div>
+        <div>
+          <div class="logo-name">ARIA</div>
+          <div class="logo-sub">AI Assistant</div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="status-pill">
+          <div class="status-dot"></div>
+          Online
+        </div>
+        <a href="admin.html" class="admin-nav-btn" title="Quản lý API & Neon Database">
+          <span>⚙️</span> Admin
+        </a>
+      </div>
+    </header>
+
+    <div class="chat" id="chat">
+      <div class="welcome" id="welcome">
+        <div class="wi-wrap">
+          <div class="wi-ring1"></div>
+          <div class="wi-ring2"></div>
+          <div class="wi-icon">✨</div>
+        </div>
+        <div>
+          <div class="w-title">Xin chào! Tôi là ARIA</div>
+          <div class="w-sub">Trợ lý AI thông minh sẵn sàng hỗ trợ bạn. Hãy hỏi tôi bất cứ điều gì.</div>
+        </div>
+        <div class="chips">
+          <div class="chip" onclick="qs('Giải thích điện toán đám mây là gì?')">☁️ Điện toán đám mây</div>
+          <div class="chip" onclick="qs('Viết một email chuyên nghiệp xin phép nghỉ phép')">✉️ Soạn thảo email</div>
+          <div class="chip" onclick="qs('Gợi ý ý tưởng lập kế hoạch tuần hiệu quả')">📅 Lập kế hoạch tuần</div>
+          <div class="chip" onclick="qs('Bạn có thể làm gì?')">💡 Khả năng của ARIA</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qbar">
+      <button class="qbtn" onclick="qs('Viết bài thơ ngắn truyền cảm hứng')">✍️ Thơ truyền cảm hứng</button>
+      <button class="qbtn" onclick="qs('Tóm tắt những xu hướng công nghệ mới nhất')">⚡ Xu hướng công nghệ</button>
+      <button class="qbtn" onclick="qs('Giúp tôi giải quyết vấn đề logic này')">🧩 Giải bài toán logic</button>
+      <button class="qbtn" onclick="qs('Viết hàm JavaScript debounce')">💻 Lập trình JS</button>
+      <button class="qbtn" onclick="qs('Luyện tập giao tiếp tiếng Anh cơ bản')">🌍 Học tiếng Anh</button>
+    </div>
+
+    <div class="input-section">
+      <div class="input-wrap">
+        <textarea id="msg-input" rows="1" placeholder="Hỏi ARIA bất cứ điều gì..."
+          onkeydown="handleKey(event)" oninput="autoR(this)"></textarea>
+        <button id="sbtn" onclick="send()" title="Gửi">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13" />
+            <polygon points="22 2 15 22 11 13 2 9 22 2" />
+          </svg>
+        </button>
+      </div>
+      <div class="ihint">Enter gửi &nbsp;·&nbsp; Shift+Enter xuống dòng</div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    /* ══ PARTICLES ══════════════════════════════ */
+    (function () {
+      const cv = document.getElementById('particles'), ctx = cv.getContext('2d');
+      let W, H, pts = [];
+      const N = Math.min(window.innerWidth < 640 ? 42 : 80, 80);
+      const MD = 125;
+      const COLS = ['rgba(129,140,248,', 'rgba(56,189,248,', 'rgba(167,139,250,'];
+
+      function rz() { W = cv.width = innerWidth; H = cv.height = innerHeight; }
+
+      function init() {
+        pts = [];
+        for (let i = 0; i < N; i++) pts.push({
+          x: Math.random() * W, y: Math.random() * H,
+          vx: (Math.random() - .5) * .3, vy: (Math.random() - .5) * .3,
+          r: Math.random() * 1.4 + 0.6,
+          c: COLS[Math.floor(Math.random() * COLS.length)],
+          a: Math.random() * .5 + 0.4
+        });
+      }
+
+      function frame() {
+        ctx.clearRect(0, 0, W, H);
+        for (let i = 0; i < pts.length; i++) {
+          for (let j = i + 1; j < pts.length; j++) {
+            const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y;
+            const d = Math.sqrt(dx * dx + dy * dy);
+            if (d < MD) {
+              ctx.beginPath();
+              ctx.moveTo(pts[i].x, pts[i].y);
+              ctx.lineTo(pts[j].x, pts[j].y);
+              ctx.strokeStyle = `rgba(129,140,248,${(1 - d / MD) * .13})`;
+              ctx.lineWidth = .7; ctx.stroke();
+            }
+          }
+        }
+        pts.forEach(p => {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fillStyle = p.c + p.a + ')';
+          ctx.fill();
+          p.x += p.vx; p.y += p.vy;
+          if (p.x < 0 || p.x > W) p.vx *= -1;
+          if (p.y < 0 || p.y > H) p.vy *= -1;
+        });
+        requestAnimationFrame(frame);
+      }
+
+      rz(); init(); frame();
+      window.addEventListener('resize', () => { rz(); init(); });
+    })();
+
+    /* ══ RIPPLE ══════════════════════════════════ */
+    function ripple(el, e) {
+      const rc = el.getBoundingClientRect();
+      const sp = document.createElement('span');
+      sp.className = 'ripple';
+      const sz = Math.max(el.offsetWidth, el.offsetHeight);
+      sp.style.cssText = `width:${sz}px;height:${sz}px;left:${e.clientX - rc.left - sz / 2}px;top:${e.clientY - rc.top - sz / 2}px;position:absolute`;
+      el.appendChild(sp);
+      setTimeout(() => sp.remove(), 600);
+    }
+    const sbtn = document.getElementById('sbtn');
+    if (sbtn) sbtn.addEventListener('click', e => ripple(sbtn, e));
+
+    /* ══ STATE ═══════════════════════════════════ */
+    const msgs = [];
+    let streaming = false;
+    let neonConnected = false;
+    const CFG_KEY = 'aria_api_config', PROMPT_KEY = 'aria_system_prompt';
+    let cfg = { useCustom: false, baseURL: '', apiKey: '', model: 'gpt-4o' };
+
+    function loadCfg() {
+      try {
+        const s = localStorage.getItem(CFG_KEY);
+        if (s) cfg = { ...cfg, ...JSON.parse(s) };
+      } catch (e) { }
+    }
+
+    /* ĐỒNG BỘ CẤU HÌNH TỪ NEON POSTGRESQL TRÊN VERCEL */
+    async function syncFromNeonDb() {
+      try {
+        const res = await fetch('/api/config');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.databaseConnected) {
+            neonConnected = true;
+            if (data.apiConfig) {
+              cfg = { ...cfg, ...data.apiConfig };
+              localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
+            }
+            if (data.systemPrompt) {
+              localStorage.setItem(PROMPT_KEY, JSON.stringify(data.systemPrompt));
+            }
+          }
+        }
+      } catch (e) {
+        // Fallback sang localStorage nếu không kết nối được backend
+      }
+    }
+
+    function getSys() {
+      try {
+        const r = localStorage.getItem(PROMPT_KEY);
+        if (r) {
+          const c = JSON.parse(r);
+          if (c.enabled && c.content?.trim()) {
+            const d = new Date();
+            return c.content
+              .replace(/\{\{date\}\}/g, d.toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }))
+              .replace(/\{\{time\}\}/g, d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }))
+              .replace(/\{\{lang\}\}/g, 'Tiếng Việt');
+          }
+        }
+      } catch (e) { }
+      return 'Bạn là ARIA, trợ lý AI thông minh, thân thiện. Trả lời tự nhiên, ngắn gọn, hữu ích bằng tiếng Việt hoặc tiếng Anh tùy người dùng.';
+    }
+
+    window.addEventListener('storage', e => {
+      if (e.key === CFG_KEY) { loadCfg(); toast('Cấu hình API đã cập nhật ⚡'); }
+      if (e.key === PROMPT_KEY) { try { const c = JSON.parse(e.newValue || '{}'); toast(c.enabled && c.content ? `"${c.name || 'Prompt'}" đang hoạt động 🧠` : 'System Prompt đã tắt'); } catch (e) { } }
+    });
+
+    /* ══ TOAST ═══════════════════════════════════ */
+    function toast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg; el.classList.add('show');
+      clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), 3200);
+    }
+
+    /* ══ UTILS ═══════════════════════════════════ */
+    const nowT = () => new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    function autoR(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 140) + 'px'; }
+    function scrollBot() { const c = document.getElementById('chat'); c.scrollTop = c.scrollHeight; }
+    function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }
+    function rmWelcome() { const w = document.getElementById('welcome'); if (w) w.remove(); }
+
+    /* ══ SERVERLESS CHAT STREAM (Đọc API Key & Base URL từ Neon DB) ════ */
+    async function* streamServerChat(history) {
+      const r = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: history, stream: true })
+      });
+      if (!r.ok) {
+        let m = `HTTP ${r.status}`;
+        try { const j = await r.json(); m = j.error || m; } catch { }
+        throw new Error(m);
+      }
+      const ct = r.headers.get('content-type') || '';
+      if (ct.includes('application/json')) {
+        const j = await r.json();
+        if (j.usePuter) {
+          const iter = await puter.ai.chat(history, { model: cfg.model || 'gpt-4o', stream: true });
+          for await (const part of iter) {
+            yield { text: part?.text || '' };
+          }
+          return;
+        }
+      }
+      const rd = r.body.getReader(), dc = new TextDecoder();
+      let buf = '';
+      while (true) {
+        const { done, value } = await rd.read();
+        if (done) break;
+        buf += dc.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop() ?? '';
+        for (const line of lines) {
+          const t = line.trim();
+          if (!t.startsWith('data:')) continue;
+          const d = t.slice(5).trim();
+          if (d === '[DONE]') return;
+          try {
+            const p = JSON.parse(d);
+            const tx = p.choices?.[0]?.delta?.content || '';
+            if (tx) yield { text: tx };
+          } catch { }
+        }
+      }
+    }
+
+    /* ══ CLIENT DIRECT STREAM (Dự phòng) ════════════ */
+    async function* streamCustom(history, c) {
+      const r = await fetch(c.baseURL.replace(/\/$/, '') + '/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${c.apiKey}` },
+        body: JSON.stringify({ model: c.model || 'gpt-4o', messages: history, stream: true })
+      });
+      if (!r.ok) { let m = `HTTP ${r.status}`; try { const j = await r.json(); m = j.error?.message || m; } catch { } throw new Error(m); }
+      const rd = r.body.getReader(), dc = new TextDecoder(); let buf = '';
+      while (true) {
+        const { done, value } = await rd.read(); if (done) break;
+        buf += dc.decode(value, { stream: true });
+        const lines = buf.split('\n'); buf = lines.pop() ?? '';
+        for (const line of lines) {
+          const t = line.trim(); if (!t.startsWith('data:')) continue;
+          const d = t.slice(5).trim(); if (d === '[DONE]') return;
+          try { const p = JSON.parse(d); const tx = p.choices?.[0]?.delta?.content || ''; if (tx) yield { text: tx }; } catch { }
+        }
+      }
+    }
+
+    /* ══ MARKDOWN ════════════════════════════════ */
+    function md(txt) {
+      return txt
+        .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        .replace(/^### (.+)$/gm, '<h3 style="font-weight:600;margin:6px 0;font-size:13px;color:var(--sky)">$1</h3>')
+        .replace(/^## (.+)$/gm, '<h2 style="font-weight:700;margin:8px 0;color:var(--sky)">$1</h2>')
+        .replace(/^# (.+)$/gm, '<h1 style="font-weight:700;margin:8px 0;color:var(--sky)">$1</h1>')
+        .replace(/^\- (.+)$/gm, '<li>$1</li>')
+        .replace(/(<li>.*<\/li>)/gs, '<ul style="padding-left:20px">$1</ul>')
+        .replace(/\n\n/g, '</p><p style="margin:4px 0">')
+        .replace(/\n/g, '<br>');
+    }
+
+    /* ══ ADD MESSAGE ═════════════════════════════ */
+    function addMsg(role, content) {
+      rmWelcome();
+      const ca = document.getElementById('chat');
+      const wrap = document.createElement('div'); wrap.className = `mwrap ${role}`;
+      const av = document.createElement('div'); av.className = `av ${role}`; av.textContent = role === 'ai' ? '🤖' : '👤';
+      const body = document.createElement('div'); body.className = 'mbody';
+      const bub = document.createElement('div'); bub.className = `bubble ${role}`;
+      if (typeof content === 'string') bub.innerHTML = md(content); else bub.appendChild(content);
+      const tm = document.createElement('div'); tm.className = 'mtime'; tm.textContent = nowT();
+      body.appendChild(bub);
+      body.appendChild(tm);
+      wrap.appendChild(av); wrap.appendChild(body); ca.appendChild(wrap); scrollBot();
+      return bub;
+    }
+
+    function showTyping() {
+      rmWelcome();
+      const ca = document.getElementById('chat');
+      const wrap = document.createElement('div'); wrap.id = 'typing-el'; wrap.className = 'mwrap ai';
+      const av = document.createElement('div'); av.className = 'av ai'; av.textContent = '🤖';
+      const body = document.createElement('div'); body.className = 'mbody';
+      const bub = document.createElement('div'); bub.className = 'bubble ai';
+      bub.innerHTML = '<div class="tdots"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div>';
+      body.appendChild(bub); wrap.appendChild(av); wrap.appendChild(body); ca.appendChild(wrap); scrollBot();
+    }
+    function hideTyping() { const t = document.getElementById('typing-el'); if (t) t.remove(); }
+
+    /* ══ SEND ════════════════════════════════════ */
+    async function send() {
+      if (streaming) return;
+      const inp = document.getElementById('msg-input');
+      const txt = inp.value.trim(); if (!txt) return;
+      streaming = true; inp.value = ''; inp.style.height = 'auto';
+      const sb = document.getElementById('sbtn'); sb.disabled = true;
+
+      addMsg('user', txt);
+      msgs.push({ role: 'user', content: txt });
+      showTyping();
+
+      try {
+        const sys = getSys();
+        const history = [{ role: 'system', content: sys }, ...msgs];
+
+        let iter;
+        // Ưu tiên Serverless endpoint (đọc key từ Neon DB & tránh CORS)
+        if (neonConnected || (cfg.useCustom && (!cfg.baseURL || !cfg.apiKey))) {
+          iter = streamServerChat(history);
+        } else if (cfg.useCustom && cfg.baseURL && cfg.apiKey) {
+          try {
+            iter = streamServerChat(history);
+          } catch (_) {
+            iter = streamCustom(history, cfg);
+          }
+        } else {
+          iter = await puter.ai.chat(history, { model: cfg.model || 'gpt-4o', stream: true });
+        }
+
+        hideTyping();
+
+        const ca = document.getElementById('chat');
+        const wrap = document.createElement('div'); wrap.className = 'mwrap ai';
+        const av = document.createElement('div'); av.className = 'av ai'; av.textContent = '🤖';
+        const body = document.createElement('div'); body.className = 'mbody';
+        const bub = document.createElement('div'); bub.className = 'bubble ai streaming';
+        bub.innerHTML = '<span class="scur"></span>';
+        const tm = document.createElement('div'); tm.className = 'mtime'; tm.textContent = nowT();
+        body.appendChild(bub);
+        body.appendChild(tm); wrap.appendChild(av); wrap.appendChild(body); ca.appendChild(wrap); scrollBot();
+
+        let full = '';
+        for await (const part of iter) {
+          const chunk = part?.text || ''; full += chunk;
+          bub.innerHTML = md(full) + '<span class="scur"></span>';
+          scrollBot();
+        }
+        bub.innerHTML = md(full);
+        bub.classList.remove('streaming');
+        msgs.push({ role: 'assistant', content: full });
+
+      } catch (e) {
+        hideTyping();
+        const em = cfg.useCustom
+          ? `Lỗi kết nối AI: ${e.message || 'Không thể kết nối'}.`
+          : e.message?.includes('Permission')
+            ? 'Cần đăng nhập Puter để dùng AI.'
+            : `Lỗi: ${e.message || 'Không kết nối được AI'}`;
+        addMsg('ai', `⚠️ ${em}`);
+      }
+
+      streaming = false; sb.disabled = false;
+      document.getElementById('msg-input').focus();
+    }
+
+    function qs(t) { document.getElementById('msg-input').value = t; send(); }
+
+    /* ══ INIT ════════════════════════════════════ */
+    window.addEventListener('load', () => {
+      loadCfg();
+      syncFromNeonDb();
+      document.getElementById('sbtn').addEventListener('click', e => ripple(document.getElementById('sbtn'), e));
+    });
+  </script>
+</body>
+
+</html>

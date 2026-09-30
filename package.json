@@ -1,0 +1,23 @@
+{
+  "name": "aria-ai-assistant",
+  "version": "1.0.0",
+  "description": "ARIA - Trợ lý AI thông minh với Neon PostgreSQL và triển khai Vercel",
+  "main": "api/config.js",
+  "type": "module",
+  "scripts": {
+    "start": "node dev-server.js",
+    "dev": "node dev-server.js"
+  },
+  "keywords": [
+    "ai",
+    "aria",
+    "neon",
+    "postgresql",
+    "vercel"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.4"
+  }
+}
